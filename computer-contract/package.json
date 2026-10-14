@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@gea-ai/agent-extension-feishu": "link:/home/fanfande/gea-hosted-computer-v1-20261010/packages/agent-extension-feishu",
-    "@gea-ai/agent-sdk": "link:/home/fanfande/gea-hosted-computer-v1-20261010/packages/agent-sdk",
+    "@gea-ai/agent-sdk": "link:/home/fanfande/gea-computer-providers-current/packages/agent-sdk",
     "@t3-oss/env-core": "^0.13.10",
     "better-result": "2.8.1",
     "zod": "4.3.6"

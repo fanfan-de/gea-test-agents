@@ -1,0 +1,6 @@
+{
+  "cwd": "/mnt/c/Projects/GEA测试Agents/computer-local",
+  "localComputer": "sandbox",
+  "sandboxdPath": "/home/fanfande/.local/gea-computer-providers-current/cargo-target/debug/sandboxd",
+  "bubblewrapPath": "/usr/bin/bwrap"
+}

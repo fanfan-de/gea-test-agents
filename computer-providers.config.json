@@ -1,0 +1,10 @@
+{
+  "windowsSourceRoot": "C:/Projects/gea",
+  "sourceRoot": "/home/fanfande/gea-computer-providers-current",
+  "nativeTargetRoot": "/home/fanfande/.local/gea-computer-providers-current/cargo-target",
+  "toolchainEnvironmentFile": "/home/fanfande/.local/gea-computer-v1/environment.sh",
+  "environmentProject": "computer-contract",
+  "wslDistribution": "Ubuntu",
+  "wslUser": "fanfande",
+  "providers": ["default", "justbash", "e2b", "remote", "local", "device"]
+}

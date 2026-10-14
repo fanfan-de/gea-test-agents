@@ -1,0 +1,24 @@
+{
+  "name": "gea-computer-default-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "bash ../providers.sh validate default",
+    "pack:agent": "bash ../providers.sh pack default",
+    "publish:agent": "bash ../providers.sh publish default",
+    "test:agent": "bash ../providers.sh test default"
+  },
+  "dependencies": {
+    "@gea-ai/agent-sdk": "link:/home/fanfande/gea-computer-providers-current/packages/agent-sdk",
+    "better-result": "2.8.1",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24"
+  },
+  "engines": {
+    "node": "24.16.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

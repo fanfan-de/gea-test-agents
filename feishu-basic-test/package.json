@@ -1,0 +1,18 @@
+{
+  "name": "gea-feishu-basic-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "powershell -NoProfile -File ./gea.ps1 validate",
+    "pack:agent": "powershell -NoProfile -File ./gea.ps1 pack"
+  },
+  "dependencies": {
+    "@gea-ai/agent-extension-feishu": "link:../../gea-worktree/packages/agent-extension-feishu",
+    "@gea-ai/agent-sdk": "link:../../gea-worktree/packages/agent-sdk"
+  },
+  "engines": {
+    "node": "24.16.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

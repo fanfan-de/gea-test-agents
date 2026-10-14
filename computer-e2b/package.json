@@ -1,0 +1,25 @@
+{
+  "name": "gea-computer-e2b-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "bash ../providers.sh validate e2b",
+    "pack:agent": "bash ../providers.sh pack e2b",
+    "publish:agent": "bash ../providers.sh publish e2b",
+    "test:agent": "bash ../providers.sh test e2b"
+  },
+  "dependencies": {
+    "@gea-ai/agent-sdk": "link:/home/fanfande/gea-computer-providers-current/packages/agent-sdk",
+    "@gea-ai/computer-e2b": "link:/home/fanfande/gea-computer-providers-current/packages/computer-e2b",
+    "better-result": "2.8.1",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24"
+  },
+  "engines": {
+    "node": "24.16.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

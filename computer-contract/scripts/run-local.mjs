@@ -1,12 +1,13 @@
 import { spawn } from "node:child_process";
 import { openSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
 import {
   childEnvironment,
   environment,
+  projectRoot,
   settings,
   stateRoot,
 } from "./environment.mjs";
@@ -28,7 +29,10 @@ let alreadyRunning = false;
 if (previous?.running) {
   try {
     const command = await readFile(`/proc/${previous.pid}/cmdline`, "utf8");
-    alreadyRunning = command.split("\0").includes("scripts/run-local.mjs");
+    const cwd = await readlink(`/proc/${previous.pid}/cwd`);
+    alreadyRunning =
+      command.split("\0").includes("scripts/run-local.mjs") &&
+      cwd === projectRoot.replace(/\/$/u, "");
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
@@ -173,6 +177,8 @@ try {
       "/usr/bin/bwrap",
       "--shim-path",
       path.join(settings.rustTargetRoot, "debug/sandboxd"),
+      "--lark-cli-path",
+      childEnvironment.FEISHU_LARK_CLI_BIN,
     ],
     stateRoot,
     {

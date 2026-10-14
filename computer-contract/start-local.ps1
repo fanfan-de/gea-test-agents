@@ -10,7 +10,7 @@ if ($LASTEXITCODE -ne 0) {
     $launcher = Start-Process -FilePath 'wsl.exe' -ArgumentList @('-d', 'Ubuntu', '-u', 'fanfande', '--', 'bash', $scriptPath) -WindowStyle Hidden -RedirectStandardOutput (Join-Path $logDirectory ($logName + '.stdout.log')) -RedirectStandardError (Join-Path $logDirectory ($logName + '.stderr.log')) -PassThru
     Write-Host '正在启动本地 Agent Studio，等待服务就绪…'
 }
-for ($attempt = 0; $attempt -lt 30; $attempt++) {
+for ($attempt = 0; $attempt -lt 120; $attempt++) {
     if ($launcher -and $launcher.HasExited -and $launcher.ExitCode -ne 0) {
         throw "启动失败，请查看 .local/$logName.stderr.log"
     }
@@ -18,8 +18,8 @@ for ($attempt = 0; $attempt -lt 30; $attempt++) {
         $runtimeHealth = Invoke-WebRequest -Uri "http://127.0.0.1:$($settings.runtimePort)/healthz" -NoProxy -TimeoutSec 2
         $studioPage = Invoke-WebRequest -Uri "http://127.0.0.1:$($settings.webPort)/readyz" -Headers @{ Host = "musegea.localhost:$($settings.webPort)" } -NoProxy -TimeoutSec 10
         if ($runtimeHealth.StatusCode -eq 200 -and $studioPage.StatusCode -eq 200) {
-            Write-Host '本地 Agent Studio 已启动：http://musegea.localhost:3002/'
-            Write-Host '测试入口：http://local-test.musegea.localhost:3002/studio/default'
+            Write-Host "本地 Agent Studio 已启动：http://musegea.localhost:$($settings.webPort)/"
+            Write-Host "测试入口：http://$($settings.organization).musegea.localhost:$($settings.webPort)/studio/$($settings.workspace)"
             exit 0
         }
     } catch {

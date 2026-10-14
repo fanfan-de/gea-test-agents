@@ -170,8 +170,8 @@ importers:
         specifier: link:/home/fanfande/gea-hosted-computer-v1-20261010/packages/agent-extension-feishu
         version: link:../../../../../home/fanfande/gea-hosted-computer-v1-20261010/packages/agent-extension-feishu
       '@gea-ai/agent-sdk':
-        specifier: link:/home/fanfande/gea-hosted-computer-v1-20261010/packages/agent-sdk
-        version: link:../../../../../home/fanfande/gea-hosted-computer-v1-20261010/packages/agent-sdk
+        specifier: link:/home/fanfande/gea-computer-providers-current/packages/agent-sdk
+        version: link:../../../../../home/fanfande/gea-computer-providers-current/packages/agent-sdk
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.11(zod@4.3.6)

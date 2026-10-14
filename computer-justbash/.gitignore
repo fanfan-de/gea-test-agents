@@ -1,0 +1,7 @@
+node_modules/
+.gea/
+.local/
+dist/
+.env
+.env.*
+!.env.example
