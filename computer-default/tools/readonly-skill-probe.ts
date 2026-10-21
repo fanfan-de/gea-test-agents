@@ -31,10 +31,10 @@ export default defineTool({
         ),
       );
       const output = await computer.commands.run({
-        command: "python3",
+        command: "node",
         args: [
-          "-c",
-          "import json,pathlib,sys\nroot=pathlib.Path(sys.argv[1])\nmarker=b'GEA_PROVIDER_READONLY_PROBE'\nfiles=[p for p in root.rglob('SKILL.md') if marker in p.read_bytes()]\nif len(files)!=1: raise RuntimeError('Expected exactly one bundled probe Skill')\np=files[0]\nbefore=p.read_bytes()\ndenied=False\nerror=None\ntry:\n p.write_bytes(before)\nexcept OSError as exc:\n if exc.errno not in (1,13,30): raise\n denied=True\n error=str(exc)\nprint(json.dumps({'path':str(p),'readable':True,'unchanged':p.read_bytes()==before,'writeDenied':denied,'error':error}))",
+          "-e",
+          "const fs=require('node:fs'),path=require('node:path');const files=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const p=path.join(dir,entry.name);if(entry.isDirectory())walk(p);else if(entry.name==='SKILL.md'&&fs.readFileSync(p).includes('GEA_PROVIDER_READONLY_PROBE'))files.push(p)}}walk(process.argv[1]);if(files.length!==1)throw new Error('Expected exactly one bundled probe Skill');const p=files[0],before=fs.readFileSync(p);let denied=false,error=null;try{fs.writeFileSync(p,before)}catch(e){if(!['EACCES','EPERM','EROFS'].includes(e.code))throw e;denied=true;error=e.message}process.stdout.write(JSON.stringify({path:p,readable:true,unchanged:fs.readFileSync(p).equals(before),writeDenied:denied,error}))",
           info.roots.skills,
         ],
         timeoutMs: 10000,
@@ -42,7 +42,7 @@ export default defineTool({
       if (output.exitCode !== 0)
         return {
           status: "error",
-          error: { operation: "readonly_skill_probe.python", ...output },
+          error: { operation: "readonly_skill_probe.node", ...output },
         };
       const probe = outputSchema.parse(JSON.parse(output.stdout));
       return {

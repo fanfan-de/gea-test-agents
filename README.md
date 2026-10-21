@@ -2,8 +2,41 @@
 
 GEA Agent 集成测试项目，包含飞书 Extension 测试与 Computer 文件、进程能力测试。
 
+## 当前 Computer 主测试入口（2026-10-21）
+
+本次改造复用 [computer-default](./computer-default/README.md)，依赖直接链接 `C:\Projects\gea-worktree` 当前源码，不再使用旧 WSL 副本。目标由 [studio.config.json](./studio.config.json) 指定，当前为 `http://local-dev.musegea.localhost:3000`、工作区 `default`。模型在 `computer-default/agent.ts` 中配置。
+
+在本目录执行：
+
+```powershell
+.\studio.ps1 install
+.\studio.ps1 unit
+.\studio.ps1 validate
+.\studio.ps1 pack
+.\studio.ps1 doctor
+.\studio.ps1 publish
+.\studio.ps1 test
+```
+
+`studio.ps1` 使用 `.node-version` 要求的 Node 24.16.0；安装了 fnm 时会通过它运行对应版本，避免 PowerShell 提示与实际 Node 版本不一致。`unit` 使用本机真实临时文件和 Node 子进程验证探针逻辑；`validate` 检查类型和当前 CLI 的 Agent 定义；`pack` 在 `computer-default/dist` 生成可导入的 `.gea-agent.zip`。这三步不要求 Studio 在线。
+
+`doctor` 只检查目标与 `/readyz`，不启动或停止服务。自动发布和真实 Agent 验收需要完整的 Studio 链路就绪；仓库启动说明见 `C:\Projects\gea-worktree\README.md` 中的 `pnpm dev:studio`。自动登录读取 `.local/studio-login.json`，结构见 [studio-login.example.json](./studio-login.example.json)，填入当前本地 Studio 的已有账号；该私有文件被 Git 忽略。也可直接通过 Builder 界面导入打包文件并使用[测试提示词](./computer-default/测试提示词.md)。
+
+发布只选择 Preview，新的回执保存到 `.local/studio-ready.json`。验收会检查目标和当前源码的构建 hash，串行调用真实模型与工具，核对消息持久化、Run 最终状态、同 Session 持久化和新 Session 隔离。每次报告保存为 `.local/studio-verification-<时间>.json/.md`，最新报告为 `.local/studio-verification.json/.md`；失败、unsupported 和未执行项目分别列出。它不把模型的口头结论或历史测试结果计为通过。
+
+Run 结束需同时满足 `finished`、流恢复接口 HTTP 204 和持久化工具证据一致；原始 `activeStreamId` 保留在报告中，不单凭该字段判断活跃状态。已确认结束的工具失败会记为 failed 后继续独立项目，依赖失败的文件用例记为 blocked；部署不符、证据缺失、仍活跃或结果明确 unknown 时会中止并清理本轮精确 Run。任何失败或未执行项都不能得到整轮通过结论。
+
+已有浏览器登录会话时，脚本也支持临时的 `.local/studio-session.json`，字段为 `baseUrl`、`organization`、`workspace`、`cookie`、`expiresAt`（ISO UTC）。只接受与当前配置完全一致且未过期的会话；文件损坏、过期或目标不符都会在请求前停止。该文件包含认证秘密，使用后删除；不要纳入版本管理。文件不存在时才使用上面的账号密码登录流程。
+
+2026-10-21 本地 Studio 从当前 `gea-worktree` 源码同步到 WSL `/home/fanfande/gea-studio-current` 后启动，入口为 `http://local-dev.musegea.localhost:3000`。同次源码构建的 API、Worker Runtime 和 Computer 服务分别使用 3001、3002、8789 端口；复用原有数据库与 Docker 基础服务。启动状态和日志位于本项目忽略目录 `.local/studio-service/`，不读取 2026-10-12 的旧测试源码。当前 [Computer-Default-Test](http://local-dev.musegea.localhost:3000/builder/default/agents/01a15cee-9f1b-717a-bf82-cb8572bb0e40) 已发布到 `local-dev / default` 的 Preview，真实结果以本次验收报告为准。
+
+本轮完整真实验收执行了 12 项：10 passed、2 failed、0 unsupported、0 blocked。失败项是命令 timeout 与后台 terminate，均返回 `Computer command and cleanup failed.`；已定位到共享命令句柄关闭时未传终止确认标记，不能将其计为通过。全部 Run 已 finished，流恢复接口均为 204。完整证据见 `.local/studio-verification.json/.md`，平台问题分析见 `.local/studio-platform-observations.md`。本地 36 项行为测试、当前源码 validate 和 pack 通过，打包 hash 与实际 Preview 部署一致。本轮复用现有浏览器登录完成；临时认证文件已清理，后续脚本执行需要重新提供当前有效的本地登录配置。
+
+以下 provider 矩阵和部署记录是 2026-10-12 的历史环境，保留用于参考。改造后的 `computer-default` 使用上面的 `studio.ps1` 入口，不再使用旧 `providers.ps1` / `providers.sh` 验收它；其他 provider 项目和飞书项目保持原样。
+
 ## 项目入口
 
+- [computer-none](./computer-none/README.md)：完全省略 Computer 配置的独立测试 Agent，已发布到本地 3006 Preview；真实验证空挂载下纯计算可用，shell/文件调用失败。
 - [feishu-basic-test](./feishu-basic-test/README.md)：官方飞书 Extension 基础测试 Agent，凭据在 Studio 配置。
 - [飞书基础测试提示词](./feishu-basic-test/测试提示词.md)：基础对话、Connector、私聊、群聊和个人授权测试。
 - [computer-contract](./computer-contract/README.md)：环境配置、启动、发布和验收说明。

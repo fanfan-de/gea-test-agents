@@ -26,8 +26,8 @@ export default defineTool({
       ),
       Result.tryPromise(() =>
         computer.commands.run({
-          command: "python3",
-          args: ["-c", "print('UNEXPECTED_COMMAND_PERMISSION')"],
+          command: "node",
+          args: ["-e", "console.log('UNEXPECTED_COMMAND_PERMISSION')"],
         }),
       ),
     ]);

@@ -16,21 +16,12 @@ const infoSchema = z.object({
     tmp: z.string().min(1),
   }),
   capabilities: z.array(z.string()),
-  filesystemProbe: z.object({
-    binary: z.boolean(),
-    stream: z.boolean(),
-    rename: z.boolean(),
-    stat: z.boolean(),
-    remove: z.boolean(),
-    seed: z.boolean(),
-  }),
-  pythonVersion: z.string().min(1),
 });
 
 export default defineTool({
   name: "computer_info",
   description:
-    "读取真实初始化结果、目录、能力与应用协议可用性；不读取环境密钥。",
+    "读取本次初始化记录的 provider、chat、目录与能力；不运行命令，不读取环境密钥。",
   input: z.object({}),
   permissions: { workspace: ["read"], commands: false },
   async execute(_, ctx) {
@@ -58,19 +49,9 @@ export default defineTool({
         },
       };
     }
-    const info = result.value;
     return {
-      status: Object.values(info.filesystemProbe).every(Boolean)
-        ? "passed"
-        : "error",
-      ...info,
-      protocol: computer.protocol
-        ? {
-            supported: true,
-            computerId: computer.protocol.computerId,
-            executionId: computer.protocol.executionId,
-          }
-        : { supported: false },
+      status: "passed",
+      ...result.value,
     };
   },
 });

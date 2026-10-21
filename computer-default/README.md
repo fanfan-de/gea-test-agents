@@ -1,39 +1,43 @@
 # Computer Default Test
 
-独立 Agent，slug 为 `computer-default-test`，模型为 `qwen3.7-plus`，无飞书 Extension。声明入口 [agent.ts](./agent.ts)，交互规则 [AGENTS.md](./AGENTS.md)，验收提示 [测试提示词.md](./测试提示词.md)。
+专门测试 GEA Studio Computer 文件和命令能力的独立 Agent，slug 为 `computer-default-test`，模型为 `qwen3.7-plus`。入口是 [agent.ts](./agent.ts)，规则见 [AGENTS.md](./AGENTS.md)，手动用例见 [测试提示词.md](./测试提示词.md)。
 
-`defaultComputer()` 使用第一方托管 Computer allocation 与现有 `agent-computerd` 服务。Agent 不声明远程 endpoint/token，平台与 Native Runtime 负责分配、鉴权和路由。当前本机共享环境启动第一方 daemon 与 sandboxd；这套测试不依赖 Remote reference 的 8791 端口。
+使用当前相邻 `gea-worktree` 的公开 Agent SDK，声明 `defaultComputer()` 与 durable/chat 文件 scope。初始化只写 provider/chat/scope/roots/capabilities 元数据；文件和进程检查由用户显式调用。要求 shell、exec、files、readonly-mounts，缺少 processes 时仍可检查环境。
 
-文件策略为 durable/chat；要求 shell、exec、processes、files、readonly-mounts。Python 3 由执行环境 PATH 解析。每个执行 generation 有自己的初始化与命令生命周期，文件按 chat scope 保留。Tool 不创建或停止 Computer。
+## 执行
 
-依赖 source-link 指向 `/home/fanfande/gea-computer-providers-current/packages/agent-sdk`；Node 24.16.0、pnpm 12.8.1。先安装该源码快照依赖，再在 WSL 安装本项目。使用同源码的 Runtime、daemon 与 sandboxd，避免旧二进制影响验收。
-
-从父目录使用共享入口：
+从父目录 `C:\Projects\GEA测试Agents` 使用新入口，连接配置中的当前 Studio：
 
 ```powershell
-.\providers.ps1 validate -Provider default
-.\providers.ps1 pack -Provider default
-.\providers.ps1 publish -Provider default
-.\providers.ps1 test -Provider default
+.\studio.ps1 doctor
+.\studio.ps1 unit
+.\studio.ps1 validate
+.\studio.ps1 pack
+.\studio.ps1 publish
+.\studio.ps1 test
 ```
 
-WSL 入口是 `../providers.sh validate default`；本目录也可 `pnpm validate`、`pnpm pack:agent`、`pnpm publish:agent`、`pnpm test:agent`。共享配置与真实服务状态见上层 README、配置和启动器输出。Default 不需要为 Agent 配置 E2B 或 Remote provider secret。
+`doctor` 检查配置和 Studio readiness；`unit` 运行本地行为测试；`validate`/`pack` 检查当前源代码。`publish` 将本项目上传到配置的 Studio Preview，`test` 串行调用真实模型和工具，检查相同 Chat 持久化及新 Chat 隔离。源代码变动后应重新 publish，再运行 test。凭据与环境配置方式见[父目录说明](../README.md)。
 
-初始化通过完整公开 Computer API 验证二进制/流读写、seed、mkdir/list/rename/stat/remove，成功后保存 `provider-tests/default/info.json`。只清理该次生成的 UUID probe。初始化不写、不重建 note。
+工具链固定 Node 24.16.0、pnpm 12.8.1。Windows 优先使用 `studio.ps1` 选择固定 Node，不能只信 shell 的版本提示。项目 `pnpm` 脚本也指向新 Studio 入口；旧 `providers.ps1` 与历史 `.local` 回执不作为当前验收依据。
 
-| 工具                 | 覆盖                                                            | 预期                                 |
-| -------------------- | --------------------------------------------------------------- | ------------------------------------ |
-| computer_info        | roots/capabilities/初始化文件探测/Python/v1可用性               | passed；文件检查均 true              |
-| files_probe          | workspace文本和真实Python二进制、字面argv/env/stdin；read不补写 | 写入完全匹配；同Chat复读成功         |
-| command_probe        | success/nonzero/timeout/terminate/interactive                   | 实际退出或预期拒绝；nonzero为7       |
-| permissions_probe    | 未授权Tool实际写入/执行                                         | 两项allowed false、denied true       |
-| readonly_skill_probe | 独立测试Skill只读                                               | readable/unchanged/writeDenied均true |
-| application_probe    | 可选v1 binary stdin/EOF、events、state                          | 当前托管实现支持；真实ID/字节/状态   |
+## 覆盖
 
-普通 Run 写入 note 后，同 Chat 后续 Run 应 found true 且文本一致；新 Chat 的初始 read 应 found false。不能仅凭 roots 目录名判断隔离。scope 不是执行锁。应用协议只在当前 daemon advertise v1 后可用，不以旧 commands 成功替代。
+| 工具                 | 实际检查                                                          | 通过条件                                   |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------------ |
+| computer_info        | 初始化记录与实际能力                                              | 元数据可读，provider 为 default            |
+| runtime_probe        | Node 版本、cwd、字面 argv/env/stdin                               | 三项匹配为 true                            |
+| files_probe          | workspace 文本、中文空格路径、Node 二进制改名/删除、命令/API 同源 | 四项匹配为 true；保留 note                 |
+| command_probe        | 成功、exit 7、timeout、kill、stdin EOF                            | 实际结果符合场景；后台无能力时 unsupported |
+| permissions_probe    | Tool 文件写与命令权限拒绝                                         | 两项真实拒绝                               |
+| readonly_skill_probe | 独立测试 Skill 读及原字节写回                                     | 可读、内容未变、写入被拒绝                 |
 
-测试串行执行。只保留 `provider-tests/default/seed.txt`、info.json、note.txt 和用户指定文件；清理只删除本工具的 UUID probes/application 文件。测试覆盖文件和进程，不覆盖桌面键鼠/截图。错误保留真实 operation/name/message 或协议 code/outcome/method；不编造退出码。
+files_probe 的 read 模式绝不补写。它返回 found/text 供外部核对；同 Chat 应读回本轮唯一 token，新 Chat 应不存在。读取成功本身不能证明持久化。UUID probe 目录成功后删除；失败可保留作为证据。seed 只初始化一次，后续不会自动铺回。
 
-2026-10-12：依赖安装、类型检查、validate/pack 和真实 `qwen3.7-plus` 模型验收均已通过。六个 Tool、同 Chat 持久化、新 Chat 隔离、exit 7、超时、后台 kill 与交互 stdin/EOF 均有实际结果。验证采用已通过的文件/Skills/v1 基线加受影响命令的定向复核；旧超时判定失败保留，未将其改写为通过。
+默认 Computer 的实际后端由宿主环境决定。Studio hosted 默认可提供原生 Node 和 processes；本地 virtual 兼容后端的能力有限，Node 缺失会如实失败，后台场景依据 capabilities 报 unsupported。测试不会自动切换 provider 或退回 trusted shell。
 
-[当前 Studio Agent](http://local-test.musegea.localhost:3003/studio/default/agents/01a12eae-988b-755e-8880-afd7c7e8e99b)。整合回执在 `.local/verification.json`；来源为 `.local/verification-baseline.json` 与 `.local/verification-commands.json`。超时通过本 Tool 的明确 deadline signal 核对；kill 后无退出码时保留 SDK 的实际 terminal error，不补造退出码。
+## 验收边界
+
+`tests/tools.test.mjs` 使用真实临时文件与 Node 子进程验证 Tool 行为，包括初始化不运行测试、Unicode/二进制互通、缺文件观察、后台能力拒绝、超时和清理失败判定。这些测试不代替真实 Studio 的鉴权、Runtime、sandboxd、模型、权限隔离和持久化验收；实际运行结果以本轮报告为准。
+
+当前 Tool context 只公开 commands 与 workspace 文本/列表方法，没有 `computer.protocol`。旧 application_probe 已移除。本项目不直接验收底层 v1 事件或完整 stream/binary SDK API，也不测试 GUI 截图、键鼠或设备 relay。所有测试文件限定在 `provider-tests/default/`，不清空 workspace，不输出凭据。

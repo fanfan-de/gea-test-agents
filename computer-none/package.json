@@ -1,0 +1,21 @@
+{
+  "name": "gea-computer-none-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/package.mjs validate",
+    "pack:agent": "node scripts/package.mjs pack"
+  },
+  "dependencies": {
+    "@gea-ai/agent-sdk": "link:../../gea-worktree/packages/agent-sdk",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24"
+  },
+  "engines": {
+    "node": "24.16.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

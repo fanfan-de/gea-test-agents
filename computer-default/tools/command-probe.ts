@@ -2,10 +2,12 @@ import { defineTool } from "@gea-ai/agent-sdk";
 import { Result } from "better-result";
 import { z } from "zod";
 
+const infoSchema = z.object({ capabilities: z.array(z.string()) });
+
 export default defineTool({
   name: "command_probe",
   description:
-    "串行测试成功、非零退出、超时、后台 kill 或交互 stdin/EOF；保留实际错误和退出结果。",
+    "串行验证 Node 成功、非零退出、真实 timeout、后台 kill 和交互 stdin/EOF；不支持 processes 时明确报告，未知结果和清理失败不算通过。",
   input: z.object({
     scenario: z.enum([
       "success",
@@ -28,15 +30,29 @@ export default defineTool({
     let killRequested = false;
     let readinessOutput = "";
     const started = Date.now();
-    const deadline =
-      scenario === "timeout" ? AbortSignal.timeout(1000) : undefined;
     const result = await Result.tryPromise(async () => {
+      if (scenario === "terminate" || scenario === "interactive") {
+        const info = infoSchema.parse(
+          JSON.parse(
+            await computer.workspace.readText(
+              "provider-tests/default/info.json",
+            ),
+          ),
+        );
+        if (!info.capabilities.includes("processes"))
+          return {
+            status: "unsupported",
+            scenario,
+            reason: "This Computer does not advertise processes.",
+            capabilities: info.capabilities,
+          };
+      }
       if (scenario === "interactive") {
         const process = await computer.commands.run({
-          command: "python3",
+          command: "node",
           args: [
-            "-c",
-            "import sys; data=sys.stdin.read(); sys.stdout.write(data); sys.stderr.write('EOF_RECEIVED')",
+            "-e",
+            "let text='';process.stdin.setEncoding('utf8');process.stdin.on('data',chunk=>text+=chunk);process.stdin.on('end',()=>{process.stdout.write(text);process.stderr.write('EOF_RECEIVED')})",
           ],
           background: true,
           stdin: true,
@@ -60,11 +76,8 @@ export default defineTool({
       }
       if (scenario === "terminate") {
         const process = await computer.commands.run({
-          command: "python3",
-          args: [
-            "-c",
-            "import time; print('READY_TO_KILL',flush=True); time.sleep(30)",
-          ],
+          command: "node",
+          args: ["-e", "console.log('READY_TO_KILL');setTimeout(()=>{},30000)"],
           background: true,
           timeoutMs: 10000,
         });
@@ -89,18 +102,15 @@ export default defineTool({
       }
       const program =
         scenario === "success"
-          ? "import os; print('COMMAND_OK'); print(os.getcwd())"
+          ? "console.log('COMMAND_OK');console.log(process.cwd())"
           : scenario === "nonzero"
-            ? "import sys; print('EXPECTED_NONZERO',file=sys.stderr); sys.exit(7)"
-            : "import time; print('WAITING_FOR_TIMEOUT',flush=True); time.sleep(30)";
-      const output = await computer.commands.run(
-        {
-          command: "python3",
-          args: ["-c", program],
-          timeoutMs: scenario === "timeout" ? 1000 : 10000,
-        },
-        deadline ? { signal: deadline } : {},
-      );
+            ? "process.stderr.write('EXPECTED_NONZERO');process.exitCode=7"
+            : "console.log('WAITING_FOR_TIMEOUT');setTimeout(()=>{},30000)";
+      const output = await computer.commands.run({
+        command: "node",
+        args: ["-e", program],
+        timeoutMs: scenario === "timeout" ? 1000 : 10000,
+      });
       const passed =
         scenario === "success"
           ? output.exitCode === 0 && output.stdout.includes("COMMAND_OK")
@@ -110,37 +120,67 @@ export default defineTool({
       return { status: passed ? "passed" : "error", scenario, ...output };
     });
     if (result.isErr()) {
-      const error = result.error;
-      const cause = error.cause instanceof Error ? error.cause : error;
-      const elapsedMs = Date.now() - started;
+      const cause =
+        result.error.cause instanceof Error ? result.error.cause : result.error;
+      const code =
+        "code" in cause && typeof cause.code === "string"
+          ? cause.code
+          : undefined;
+      const outcome =
+        "outcome" in cause && typeof cause.outcome === "string"
+          ? cause.outcome
+          : undefined;
       const expectedTermination =
         scenario === "terminate" &&
+        cause.cause === undefined &&
+        (outcome === undefined || outcome === "failed") &&
         killRequested &&
         readinessOutput.includes("READY_TO_KILL") &&
-        (cause.message === "Computer process exited without an exit code." ||
-          /terminated|killed/u.test(cause.message.toLowerCase()));
+        ((code === "COMMAND_TERMINATED" && outcome === "failed") ||
+          (code === undefined &&
+            cause.message === "Computer process exited without an exit code."));
       const expectedTimeout =
         scenario === "timeout" &&
-        deadline?.aborted === true &&
-        deadline.reason?.name === "TimeoutError" &&
-        !ctx.signal.aborted;
+        !ctx.signal.aborted &&
+        cause.cause === undefined &&
+        (outcome === undefined || outcome === "failed") &&
+        (code === undefined || code === "COMMAND_FAILED") &&
+        (cause.name === "TimeoutError" ||
+          /^(?:Computer command failed: )?(?:Computer process timed out\.|process timed out after \d+ms)$/.test(
+            cause.message,
+          ));
       return {
         status: expectedTermination || expectedTimeout ? "passed" : "error",
         scenario,
         ...(processId ? { processId } : {}),
         killRequested,
         readinessOutput,
-        elapsedMs,
+        elapsedMs: Date.now() - started,
         expectedTermination,
         expectedTimeout,
-        ...(deadline ? { deadlineExpired: deadline.aborted } : {}),
         error: {
           operation: "commands.run/wait",
           name: cause.name,
           message: cause.message,
+          ...(code ? { code } : {}),
+          ...(outcome ? { outcome } : {}),
+          ...(Array.isArray(cause.cause)
+            ? {
+                causes: cause.cause.map((error: unknown) =>
+                  error instanceof Error
+                    ? { name: error.name, message: error.message }
+                    : { message: String(error) },
+                ),
+              }
+            : {}),
+          ...(cause.cause instanceof Error
+            ? {
+                cause: { name: cause.cause.name, message: cause.cause.message },
+              }
+            : {}),
         },
       };
     }
-    return result.value;
+    return { ...result.value, elapsedMs: Date.now() - started };
   },
 });

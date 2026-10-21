@@ -1,0 +1,10 @@
+{
+  "sourceRoot": "C:/Projects/gea-worktree",
+  "baseUrl": "http://musegea.localhost:3000",
+  "organization": "local-dev",
+  "workspace": "default",
+  "projectDirectory": "computer-default",
+  "projectSlug": "computer-default-tests",
+  "workerName": "computer-default-test",
+  "loginFile": ".local/studio-login.json"
+}
