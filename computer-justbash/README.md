@@ -39,5 +39,3 @@ source /home/fanfande/.local/gea-computer-v1/environment.sh
 cd /home/fanfande/gea-computer-providers-current/packages/gea-cli
 pnpm exec jiti /mnt/c/Projects/GEA测试Agents/computer-justbash/tests/worker-smoke.ts
 ```
-
-2026-10-12 本测试已通过12个实际Tool调用（全部六Tool、五个command场景、跨invocation复读），确认SDK权限拒绝、Skills只读和ephemeral隔离。回执在Git忽略的 `.local/direct-verification.json`。它验证运行行为，不代表真实模型或Studio发布验收。类型、validate、pack结果另由共享流程保存。

@@ -24,14 +24,6 @@ fnm exec --using=24.16.0 pnpm.cmd pack:agent
 
 本地校验和打包不登录、不发布、不启动或停止服务。依赖锁文件用于记录本项目安装结果；依赖链接的 SDK 仍取当前源码。
 
-## 实际体验
+## 验收
 
-2026-10-21 已发布 v1 到本地 `local-dev / default` 的 Preview，可打开 [Computer-None-Test Playground](http://local-dev.musegea.localhost:3006/builder/default/agents/01a15f03-eee2-73fe-9ea5-9ad70d42988a?environment=preview&view=playground)，新建会话后按 [体验提示词](./体验提示词.md) 逐条发送。
-
-本次真实模型基线 Run 已 `finished`，持久化工具记录中，`computer_targets` 返回 `mounts: []`、`primaryMountId: null`；`calculate_sum([12, 30, 0.5])` 返回 `count: 3`、`sum: 42.5`。Agent 正常回复了这些结果，证明空挂载会话可执行不依赖 Computer 的自定义工具。[基线会话](http://local-dev.musegea.localhost:3006/builder/default/agents/01a15f03-eee2-73fe-9ea5-9ad70d42988a?chatId=01a15f04-5b4f-744b-9dac-646830e57d05&environment=preview&view=playground)可查看调用，原始摘要保存在忽略目录的 [summary-baseline.json](../.local/computer-none/summary-baseline.json)。这轮基线没有调用 shell 或文件工具。
-
-同一会话的第二轮真实探针也已 `finished`。`bash`、`readFile`、`writeFile` 均实际调用并持久化为 `output-error`，界面工具记录显示通用错误 `Agent execution failed.`；模型收到并在回复中引用的具体错误为 `Computer target primary is not mounted in this Session.`。随后 `calculate_sum([1, 2, 3])` 成功返回 `sum: 6`。这证明当前定义仍向模型提供显式声明的 shell/文件工具，但空挂载时它们不能执行；连续工具失败后，纯计算仍可继续。证据见 [summary-probes.json](../.local/computer-none/summary-probes.json)。本次保留这一行为，没有修改平台错误展示。
-
-验收需要分别确认：文字回复是否完成，`computer_targets` 是否返回空列表和 null primary，`calculate_sum` 是否真实执行，shell/文件工具是否提供给模型及调用结果，以及失败后纯计算能否继续。展开工具输入和输出核对，不把 Agent 口头结论当作执行证据。没有挂载时不要编造 targetMountId；出现任何挂载则停止 shell/文件探针并新建会话。
-
-此项目只测试“完全省略 Computer 配置”的当前行为。不包含 `computerRequirements` 场景、用户设备挂载或默认沙箱对照。已有相邻 Agent 和共享服务配置保持原样。
+把打包产物导入目标 Studio 的 Preview，再按[体验提示词](./体验提示词.md)验证。新会话应报告 `mounts: []` 和 `primaryMountId: null`，并能执行 `calculate_sum`。再核对 shell、读取与写入工具是否可见，以及调用时的持久化结果。最后再次运行纯计算，确认工具错误后的会话行为。

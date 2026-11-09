@@ -39,7 +39,3 @@ WSL 等价命令为 `../providers.sh validate remote`，也可以在本 Agent �
 所有产生的文件都在 `provider-tests/remote/`。初始化和 application probe 清理自己的 UUID 临时目录；files probe 保留 note 用于 lifecycle 验证，二进制探测只删除它自己的 UUID 文件。构建、CLI 状态、依赖、日志和密钥文件由 `.gitignore` 排除。校验与打包不创建 provider 环境，真实运行会调用所选 provider。
 
 本机 Remote reference 是开发验收服务，完整结果只证明当前服务与源码链路。服务必须 advertise 应用协议 v1 才能暴露可选 protocol client；不能由 factory 名称推断。
-
-2026-10-12：依赖安装、类型检查、CLI validate/pack 和真实 `qwen3.7-plus` 模型验收均已通过。六个 Tool、同 Chat 持久化、新 Chat 隔离、exit 7、超时、后台 kill 与交互 stdin/EOF 均有实际结果。验证采用已通过的文件/Skills/v1 基线加受影响命令的定向复核；旧超时判定失败保留，未将其改写为通过。
-
-[当前 Studio Agent](http://local-test.musegea.localhost:3003/studio/default/agents/01a12ea7-9742-777f-9420-f3c0424cc5ab)。整合回执在 `.local/verification.json`；来源为 `.local/verification-baseline.json` 与 `.local/verification-commands.json`。超时通过本 Tool 的明确 deadline signal 核对；kill 后无退出码时保留 SDK 的实际 terminal error，不补造退出码。

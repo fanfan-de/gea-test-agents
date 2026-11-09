@@ -1,0 +1,17 @@
+{
+  "name": "gea-agent-call-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pack:agent": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@gea-ai/agent-sdk": "link:../../gea/packages/agent-sdk",
+    "zod": "4.6.5"
+  },
+  "engines": {
+    "node": "24.16.0"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

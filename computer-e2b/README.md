@@ -39,5 +39,3 @@ WSL 等价命令为 `../providers.sh validate e2b`，也可以在本 Agent 目�
 所有产生的文件都在 `provider-tests/e2b/`。初始化和 application probe 清理自己的 UUID 临时目录；files probe 保留 note 用于 lifecycle 验证，二进制探测只删除它自己的 UUID 文件。构建、CLI 状态、依赖、日志和密钥文件由 `.gitignore` 排除。校验与打包不创建 provider 环境，真实运行会调用所选 provider。
 
 新 Computer application protocol v1 尚未适配 E2B；旧公开文件与 commands/processes 成功不代表 v1 已通过。普通 Run 的 ephemeral 验收也不等于 idle Session retain 验收。
-
-2026-10-12：本地依赖安装、类型检查、CLI validate 和 pack 已通过，并已注册到 [本地 Agent Studio Preview](http://local-test.musegea.localhost:3003/studio/default/agents/01a12ed2-a398-71d4-8502-0ce22ddd51af)。E2B_API_KEY 仍未配置；用户明确要求跳过真实 E2B 验收，因此本次没有创建 E2B sandbox，也没有执行真实 E2B Tool 或费用相关操作。
